@@ -1,0 +1,166 @@
+
+==========================================================================
+== Instalando o Grafana no CentOS:
+==========================================================================
+
+Versão:  9.0.9-2.el9
+Edição: OSS
+
+	1º - Averiguar versão do linux instalado:
+		
+		cat /etc/os-release
+
+
+	2º - Atualizar as bibliotecas do repositório:
+		
+		dnf update
+	
+	
+	3º - Com nível Super User, acessar o terminal e prosseguir:
+		
+		dnf -y install grafana
+	
+	
+	4º - Editar o arquivo existente: 
+		nano /etc/grafana/grafana.ini
+	
+	# linha 35: especifique o protocolo ⇒ possível mudar para [https], [h2], [socket]
+		protocolo = http
+	# linha 38: Endereço IP Grafana escuta (escuta tudo com [0.0.0.0])
+		http_addr =0.0.0.0
+	# linha 41: especifica a porta ⇒ possível mudar para outra porta
+		http_port = 3000
+	# linha 44: especifique o nome do domínio ⇒ possível mudar para o seu nome de domínio
+		dominio = host local
+
+
+	5º - Inicie o servidor:
+
+		systemctl enable --now grafana-server
+	
+		sudo service grafana-server status
+
+	6º - Aplicando permissão no firewall a porta 3000:
+	
+		firewall-cmd --add-port=3000/tcp
+
+		firewall-cmd --runtime-to-permanent
+
+
+	7º - Iniciando o painel: http://localhost:3000
+	
+	Usuário: admin
+	Senha: admin (Primeiro acesso)
+	OBS: Definir uma outra senha.
+		
+		
+	---------------------------------------------------------	
+	8º - Instalando o Plugin Zabbix:
+			
+		grafana-cli plugins install alexanderzobnin-zabbix-app
+		systemctl restart grafana-server
+		
+	
+		Acesse o Configurações –> Plugins
+			Localizar Zabbix apenas para conferir se está enable.
+		
+		
+		Configurações –> Data Sources
+			Pesquisar e configurar o Zabbix com as credenciais informadas pelo analista de infra.
+			
+		Nas opções HTTP em URL informe o endereço do seu servidor Zabbix http://IP_URL/zabbix/api_jsonrpc.php 
+		
+		Em Access selecione Browser. 
+		Em Zabbix API details informe seu usuário e senha do Zabbix e selecione a versão correspondente.	
+				
+		
+		Seguir demais etapas:
+		https://www.tiopen.com.br/2021/03/04/zabbix-parte-ii-integrando-grafana-e-zabbix/
+
+=============================================================================================
+--> Desenvolvendo Dashboard no Grafana:
+=============================================================================================
+
+https://www.youtube.com/watch?v=FH3oXDq0z9w
+
+
+
+=============================================================================================
+--> Links Uteis:
+=============================================================================================
+
+https://grafana.com/grafana/download?pg=get&plcmt=selfmanaged-box1-cta1&edition=oss
+
+https://grafana.com/docs/grafana/v8.5/installation/rpm/#2-start-the-server
+
+
+
+
+
+	
+=============================================================================================
+--> Possíveis problemas e soluções:
+=============================================================================================
+		
+	- Adicionar regra de direcionamento de porta:
+	
+		sudo setcap 'cap_net_bind_service=+ep' /usr/sbin/grafana-server
+		
+		sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3000
+		
+		
+	- Remover Regras IPTABLES:
+
+		iptables -t filter -F
+		iptables -t nat -F
+		iptables -t mangle -F
+		
+	
+	- Revisar as portas:
+
+		ss -ntpln
+		
+	O comando ss no Linux é extremamente útil para investigar os sockets, fornecendo várias informações sobre a rede. 
+	Ele é a evolução do comando netstat do antigo Net-tools. 
+	É importante que se entenda que um socket pode ser uma conexão de rede, bem como um socket do tipo Unix, 
+	que é um arquivo especial que atua como “ponte de comunicação” entre dois programas.
+
+Suas opções mais comuns são:
+
+		-a: lista todos sockets;
+		-r: resolve os endereços IPs e portas por nomes de serviços;
+		-n: não resolve os endereços IPs e portas para serviços;
+		-l: lista somente as portas abertas (LISTEN);
+		-e: mostra informações detalhadas sobre o socket;
+		-m: mostra a alocação de memória do socket;
+		-p: mostra o processo dono do socket;
+		-i: mostra estatísticas do TCP sobre o socket;
+		-K: força o fechamento de um socket;
+		-s: mostra as estatísticas da rede;
+		-t: filtra somente os pacotes TCP;
+		-u: filtra somente os pacotes UDP;
+		-4: filtra somente os pacotes IPv4;
+		-6: filtra somente os pacotes IPv6;
+	
+	
+	- Desinstalando Grafana:
+		
+		yum autoremove grafana-server
+		yum remove grafana-server
+		yum erase grafana-server
+		
+		
+	- Como reiniciar o SO:
+		shutdown -r now
+	
+	
+	- Caso necessitar reiniciar o Zabbix:
+	
+	systemctl stop zabbix-server
+	systemctl start zabbix-server
+	systemctl status zabbix-server
+	
+	
+	
+	
+	
